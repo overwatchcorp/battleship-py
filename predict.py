@@ -27,38 +27,35 @@ def visualizeMatrix(m):
 
 model = keras.models.load_model('trained_model')
 
-test = createTrainingInstance(0.2)
+test = createTrainingInstance(0.5)
 
 hist = test[0]
 targets = test[1]
 
 # print(test)
 
-for x in range(80):
-  pred = model.predict(test[0])
+for x in range(50):
+  pred = model.predict(hist)
   maxX = 0
   maxY = 0
-  maxV = -1
+  maxV = -100000
 
-  flip = np.random.rand() > 0.5
-  if (flip): pred = np.flip(pred)
+  mask = np.absolute(hist)
+  maskedPred = pred - mask
 
-  for c, v in np.ndenumerate(pred):
+  for c, v in np.ndenumerate(maskedPred):
     y = c[1]
     x = c[0]
     if v > maxV:
       maxV = v
       maxX = x
       maxY = y
-  if (flip):
-    maxXCopy = maxX
-    maxX = maxY
-    maxY = maxXCopy
-  vis = visualizeMatrix(pred)
+  print(maskedPred)
+  vis = visualizeMatrix(maskedPred)
   print('{}\n({},{})'.format(vis, maxX, maxY))
   res = targets[maxX][maxY]
-  if (res == 0): hist[maxX][maxY] = -1
-  if (res == 1): hist[maxX][maxY] = 100
+  if (res == 0): hist[maxX][maxY] = -10
+  if (res == 1): hist[maxX][maxY] = 1
 print(hist)
  
 
