@@ -34,11 +34,11 @@ def createTrainingInstance(noiseThreshold = 0.5):
   return [genHistVals, shipLocations]
 
 # make N instances of training data
-def createTrainingSet(n = 1000):
+def createTrainingSet(n = 1000, gameCompletion=np.random.rand()):
   trainingSet = []
   for _ in range(n):
     # create training set of X
-    data = createTrainingInstance(0)
+    data = createTrainingInstance(gameCompletion)
     trainingSet.append(data)
   return trainingSet
 
@@ -47,7 +47,8 @@ def createModel():
   inputs = keras.Input(shape=boardDimensions)
   h1 = keras.layers.Dense(256, activation="relu", input_shape=(1, 100), name="h1")(inputs)
   h2 = keras.layers.Dense(512, activation="relu", input_shape=(1, 100), name="h2")(h1)
-  outputs = layers.Dense(10)(h2)
+  h3 = keras.layers.Dense(256, activation="relu", input_shape=(1, 100), name="h3")(h2)
+  outputs = layers.Dense(10)(h3)
 
   model = keras.Model(inputs, outputs, name="battleship_midgame_predictor")
 
@@ -83,41 +84,43 @@ def predictShot(inputState, inputModel):
   return (x, y)
 
 
-nGames = 100
-nSteps = 30
+# define number of games to train on
+nGames = 9000
+nEndgames = 1000
+totalGames = nGames + nEndgames
 # define training epoch amount
 epochs = 10
-# create empty games
-trainingSet = createTrainingSet(nGames)
-
 
 class trainingLogger(keras.callbacks.Callback):
-  progressBar = tqdm.tqdm(range(nGames * nSteps))
+  progressBar = tqdm.tqdm(range(totalGames))
   progressState = 0
 
-  def on_train_begin(self, logs=None):
+  def on_train_end(self, logs=None):
     self.progressState += 1
+    self.progressBar.write('loss: {}, accuracy: {}'.format(
+      np.round(logs['loss'], decimals=2), np.round(logs['accuracy'], decimals=2)))
     self.progressBar.update(self.progressState)
   
 
 def train():
   model = createModel()
+  # create empty games
+  mainTrainingSet = createTrainingSet(nGames)
+  endgameTrainingSet = createTrainingSet(nEndgames, 0.9)
+  # concat regular games and endgames and then shuffle together
+  trainingSet = np.concatenate((mainTrainingSet, endgameTrainingSet))
+  np.random.shuffle(trainingSet)
+
   for gameInstance in trainingSet:
     gameState = gameInstance[0]
     targets = gameInstance[1]
 
-    for _ in range(nSteps):
-      model.fit(
-        gameState,
-        targets,
-        epochs=epochs,
-        verbose=0,
-        callbacks=[trainingLogger()]
-      )
-      x, y = predictShot(gameState, model)
-      # feed results back into game state
-      isHit = targets[x][y]
-      if (isHit == 0): gameState[x][y] = -1
-      if (isHit == 1): gameState[x][y] = 1
+    model.fit(
+      gameState,
+      targets,
+      epochs=epochs,
+      verbose=0,
+      callbacks=[trainingLogger()]
+    )
 
-  model.save('trained_model')
+  return model

@@ -80,7 +80,7 @@ def randPlay(n):
 
 histCols = ['hits', 'misses']
 
-nGames = 50
+nGames = 100
 nSteps = 50 
 
 randHist = pd.DataFrame([], columns=histCols)

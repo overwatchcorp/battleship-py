@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-gym = "*"
 pandas = "*"
 numpy = "*"
 tensorflow-macos = "*"
@@ -14,6 +13,8 @@ tqdm = "*"
 py-mon = "*"
 colorama = "*"
 scipy = "*"
+gymnasium = "*"
+gym = "*"
 
 [dev-packages]
 autopep8 = "*"

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0a43ff1970320781fee556965059d79efb06dff02dcc2d546fc295d0107f090e"
+            "sha256": "8e16f7d4cc3838a9b52d452ef60676872745f32948ea51c90a06ff1d6262c192"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -282,6 +282,21 @@
             ],
             "version": "==0.0.8"
         },
+        "gymnasium": {
+            "hashes": [
+                "sha256:aad97a8e31ce21da445f513ab25ad45312bd76666bd467227c923c1f3f908b1b",
+                "sha256:b625772d1e794c214f992dd1b6ec9aed683a733a4638e51e841ef31ea711057a"
+            ],
+            "index": "pypi",
+            "version": "==0.27.1"
+        },
+        "gymnasium-notices": {
+            "hashes": [
+                "sha256:3e8c868046f56dea84c949cc7e97383cccfab27152fc3f4968754e4c9c087ab9",
+                "sha256:be68c8399e88b554b6db1eb3c484b00f229cbe5c930f64f6ae9cd1a6e93db1c5"
+            ],
+            "version": "==0.0.1"
+        },
         "h5py": {
             "hashes": [
                 "sha256:03890b1c123d024fb0239a3279737d5432498c1901c354f8b10d8221d1d16235",
@@ -320,6 +335,14 @@
             ],
             "markers": "python_version >= '3.5'",
             "version": "==3.4"
+        },
+        "jax-jumpy": {
+            "hashes": [
+                "sha256:8ffe4e7609461d13decc97269ff48a3ee8d7570c96cbcc82487f893a3dd65093",
+                "sha256:eaa7587e3fda30278011ca4e815bf9ac6b71db29502c0fa15908eb532c206a9e"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==0.2.0"
         },
         "keras": {
             "hashes": [
