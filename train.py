@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from tensorflow import keras
 from tensorflow.keras import layers
-from tqdm.keras import TqdmCallback
+import tqdm
 
 boardDimensions = (10, 10)
 totalCells = boardDimensions[0] * boardDimensions[1]
@@ -46,9 +46,8 @@ def createTrainingSet(n = 1000):
 def createModel():
   inputs = keras.Input(shape=boardDimensions)
   h1 = keras.layers.Dense(256, activation="relu", input_shape=(1, 100), name="h1")(inputs)
-  h2 = keras.layers.Dense(512, activation="relu", input_shape=(1, 100), name="h2")(inputs)
-  h3 = keras.layers.Dense(256, activation="relu", input_shape=(1, 100), name="h3")(inputs)
-  outputs = layers.Dense(10)(h3)
+  h2 = keras.layers.Dense(512, activation="relu", input_shape=(1, 100), name="h2")(h1)
+  outputs = layers.Dense(10)(h2)
 
   model = keras.Model(inputs, outputs, name="battleship_midgame_predictor")
 
@@ -84,36 +83,41 @@ def predictShot(inputState, inputModel):
   return (x, y)
 
 
-# create 100 empty games
-trainingSet = createTrainingSet(100)
-
+nGames = 100
+nSteps = 30
+# define training epoch amount
 epochs = 10
+# create empty games
+trainingSet = createTrainingSet(nGames)
+
+
+class trainingLogger(keras.callbacks.Callback):
+  progressBar = tqdm.tqdm(range(nGames * nSteps))
+  progressState = 0
+
+  def on_train_begin(self, logs=None):
+    self.progressState += 1
+    self.progressBar.update(self.progressState)
+  
 
 def train():
   model = createModel()
-  print('hi')
   for gameInstance in trainingSet:
     gameState = gameInstance[0]
     targets = gameInstance[1]
 
-    for _ in range(50):
+    for _ in range(nSteps):
       model.fit(
         gameState,
         targets,
         epochs=epochs,
         verbose=0,
-        callbacks=[TqdmCallback(verbose=0, epochs=epochs)]
+        callbacks=[trainingLogger()]
       )
       x, y = predictShot(gameState, model)
       # feed results back into game state
       isHit = targets[x][y]
       if (isHit == 0): gameState[x][y] = -1
       if (isHit == 1): gameState[x][y] = 1
-
-    newGameState = pd.DataFrame(gameState).stack().reset_index()
-    newGameState.columns = ['x', 'y', 'shotResult']
-    hits = newGameState[newGameState['shotResult'] == 1]
-    misses = newGameState[newGameState['shotResult'] == -1]
-    print('{} hits {} misses'.format(hits['x'].count(), misses['x'].count()))
 
   model.save('trained_model')
