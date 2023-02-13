@@ -11,6 +11,9 @@ tensorflow-macos = "==2.11.0"
 keras = "*"
 data = "*"
 tqdm = "*"
+py-mon = "*"
+colorama = "*"
+scipy = "*"
 
 [dev-packages]
 autopep8 = "*"

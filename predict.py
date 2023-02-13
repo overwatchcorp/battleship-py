@@ -1,19 +1,19 @@
 import numpy as np
 from tensorflow import keras
-from train import createTrainingInstance
+from train import createTrainingInstance, predictShot
+import pandas as pd
+from scipy.stats import ttest_ind
 
 def visualizeMatrix(m):
-  output = ''
+  output = '╔═════ BATTLESHIP ═════╗'
   chars = [*'⠀░▒▓█']
   percentiles = np.percentile(m, [25, 50, 75, 100])
 
   for c, x in np.ndenumerate(m):
     if c[1] == 0:
-      output += '\n'
+      output += '\n║ '
       
-    if x == np.max(m):
-      output += '██'
-    elif x <= percentiles[0]:
+    if x <= percentiles[0]:
       output += '{0}{0}'.format(chars[0])
     elif x > percentiles[0] and x <= percentiles[1]:
       output += '{0}{0}'.format(chars[1])
@@ -23,47 +23,78 @@ def visualizeMatrix(m):
       output += '{0}{0}'.format(chars[3])
     else:
       output += '{0}{0}'.format(chars[4])
-  return output
+
+    if c[1] == len(m[0]) - 1:
+      output += ' ║'
+  return output + '\n╚══════════════════════╝'
 
 model = keras.models.load_model('trained_model')
 
-test = createTrainingInstance(0.5)
+def mlPlay(n):
+  test = createTrainingInstance(0.0)
 
-hist = test[0]
-targets = test[1]
+  hist = test[0]
+  targets = test[1]
+  for x in range(n):
+    x, y = predictShot(hist, model)
+    # feed results back into game state
+    isHit = targets[x][y]
+    if (isHit == 0): hist[x][y] = -1
+    if (isHit == 1): hist[x][y] = 1
 
-# print(test)
+  # print match stats 
+  newGameState = pd.DataFrame(hist).stack().reset_index()
+  newGameState.columns = ['x', 'y', 'shotResult']
+  hits = newGameState[newGameState['shotResult'] == 1]['shotResult'].sum()
+  misses = newGameState[newGameState['shotResult'] == -1]['shotResult'].sum()
+  return (hits, np.absolute(misses))
 
-for x in range(50):
-  pred = model.predict(hist)
-  maxX = 0
-  maxY = 0
-  maxV = -100000
+def randPlay(n):
+  test = createTrainingInstance(0.0)
 
-  mask = np.absolute(hist)
-  maskedPred = pred - mask
+  hist = test[0]
+  targets = test[1]
+  for x in range(n):
+    x = np.random.randint(0,10)
+    y = np.random.randint(0,10)
+    # feed results back into game state
+    isHit = targets[x][y]
+    if (isHit == 0): hist[x][y] = -1
+    if (isHit == 1): hist[x][y] = 1
 
-  for c, v in np.ndenumerate(maskedPred):
-    y = c[1]
-    x = c[0]
-    if v > maxV:
-      maxV = v
-      maxX = x
-      maxY = y
-  print(maskedPred)
-  vis = visualizeMatrix(maskedPred)
-  print('{}\n({},{})'.format(vis, maxX, maxY))
-  res = targets[maxX][maxY]
-  if (res == 0): hist[maxX][maxY] = -10
-  if (res == 1): hist[maxX][maxY] = 1
-print(hist)
- 
+  # print match stats 
+  newGameState = pd.DataFrame(hist).stack().reset_index()
+  newGameState.columns = ['x', 'y', 'shotResult']
+  hits = newGameState[newGameState['shotResult'] == 1]['shotResult'].sum()
+  misses = newGameState[newGameState['shotResult'] == -1]['shotResult'].sum()
+  return (hits, np.absolute(misses))
 
 
-# print('{}\n\n{}'.format(test[0], test[1]))
+histCols = ['hits', 'misses']
 
-# print('== INPUT =={}\n== PREDICTION =={}'.format(
-#   visualizeMatrix(test[0]), 
-#   visualizeMatrix(pred)
-#   # visualizeMatrix(test[1]))
-# ))
+nGames = 50
+nSteps = 50
+
+randHist = pd.DataFrame([], columns=histCols)
+mlHist = pd.DataFrame([], columns=histCols)
+
+for g in range(nGames):
+  gameStatus = 'game {}/{}'.format(g, nGames)
+  print(gameStatus)
+
+  randHits, randMisses = randPlay(nSteps)
+  newRandRow = pd.DataFrame([[randHits, randMisses]], columns=histCols)
+  randHist = pd.concat([randHist, newRandRow])
+
+  mlHits, mlMisses = mlPlay(nSteps)
+  newMlRow = pd.DataFrame([[mlHits, mlMisses]], columns=histCols)
+  mlHist = pd.concat([mlHist, newMlRow])
+
+print(randHist.describe(percentiles=[0.25, 0.5, 0.75]))
+print(mlHist.describe(percentiles=[0.25, 0.5, 0.75]))
+
+stat, pVal = ttest_ind(randHist['hits'], mlHist['hits'])
+print('\n{}, {}%'.format(
+  np.round(stat, decimals = 2), 
+  np.round(pVal, decimals = 2) * 100)
+)
