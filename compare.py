@@ -37,7 +37,7 @@ def mlPlay(n):
   hist = test[0]
   targets = test[1]
   for x in range(n):
-    x, y = predictShot(hist, model)
+    x, y, _ = predictShot(hist, model)
     # feed results back into game state
     isHit = targets[x][y]
     if (isHit == 0): hist[x][y] = -1

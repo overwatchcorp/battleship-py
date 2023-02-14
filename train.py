@@ -45,10 +45,11 @@ def createTrainingSet(n = 1000, gameCompletion=np.random.rand()):
 # make a model 
 def createModel():
   inputs = keras.Input(shape=boardDimensions)
-  h1 = keras.layers.Dense(256, activation="relu", input_shape=(1, 100), name="h1")(inputs)
-  h2 = keras.layers.Dense(512, activation="relu", input_shape=(1, 100), name="h2")(h1)
-  h3 = keras.layers.Dense(256, activation="relu", input_shape=(1, 100), name="h3")(h2)
-  outputs = layers.Dense(10)(h3)
+  h1 = keras.layers.Dense(1024, activation="relu", input_shape=(1, 100), name="h1")(inputs)
+  d1 = keras.layers.Dropout(0.2, name="d1")(h1)
+  h2 = keras.layers.Dense(1024, activation="relu", input_shape=(1, 100), name="h2")(d1)
+  d2 = keras.layers.Dropout(0.2, name="d2")(h2)
+  outputs = layers.Dense(10)(d2)
 
   model = keras.Model(inputs, outputs, name="battleship_midgame_predictor")
 
@@ -81,12 +82,13 @@ def predictShot(inputState, inputModel):
   x, y, prob, _ = unknowns.iloc[0]
   x = int(x)
   y = int(y)
-  return (x, y)
+  predList =  np.array(predMatrix).tolist()
+  return (x, y, predList)
 
 
 # define number of games to train on
-nGames = 9000
-nEndgames = 1000
+nGames = 1000
+nEndgames = 500
 totalGames = nGames + nEndgames
 # define training epoch amount
 epochs = 10
@@ -97,8 +99,8 @@ class trainingLogger(keras.callbacks.Callback):
 
   def on_train_end(self, logs=None):
     self.progressState += 1
-    self.progressBar.write('loss: {}, accuracy: {}'.format(
-      np.round(logs['loss'], decimals=2), np.round(logs['accuracy'], decimals=2)))
+    # self.progressBar.write('loss: {}, accuracy: {}'.format(
+      # np.round(logs['loss'], decimals=2), np.round(logs['accuracy'], decimals=2)))
     self.progressBar.update(self.progressState)
   
 
